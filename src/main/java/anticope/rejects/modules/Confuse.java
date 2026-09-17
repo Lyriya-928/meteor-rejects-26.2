@@ -1,0 +1,212 @@
+package anticope.rejects.modules;
+
+import anticope.rejects.MeteorRejectsAddon;
+import meteordevelopment.meteorclient.events.render.Render3DEvent;
+import meteordevelopment.meteorclient.events.world.TickEvent;
+import meteordevelopment.meteorclient.settings.*;
+import meteordevelopment.meteorclient.systems.modules.Module;
+import meteordevelopment.meteorclient.utils.entity.SortPriority;
+import meteordevelopment.meteorclient.utils.entity.TargetUtils;
+import meteordevelopment.meteorclient.utils.render.color.Color;
+import meteordevelopment.meteorclient.utils.render.color.SettingColor;
+import meteordevelopment.orbit.EventHandler;
+import net.minecraft.core.BlockPos;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import java.util.Random;
+
+// Too much much spaghetti!
+// -StormyBytes
+
+public class Confuse extends Module {
+
+    public enum Mode {
+        RandomTP,
+        Switch,
+        Circle
+    }
+
+    private final SettingGroup sgGeneral = settings.getDefaultGroup();
+
+    private final Setting<Mode> mode = sgGeneral.add(new EnumSetting.Builder<Mode>()
+            .name("mode")
+            .defaultValue(Mode.RandomTP)
+            .description("Mode")
+            .build()
+    );
+
+    private final Setting<Integer> delay = sgGeneral.add(new IntSetting.Builder()
+            .name("delay")
+            .description("Delay")
+            .defaultValue(3)
+            .min(0)
+            .sliderMax(20)
+            .build()
+    );
+
+    private final Setting<Integer> range = sgGeneral.add(new IntSetting.Builder()
+            .name("radius")
+            .description("Range to confuse opponents")
+            .defaultValue(6)
+            .min(0).sliderMax(10)
+            .build()
+    );
+
+    private final Setting<SortPriority> priority = sgGeneral.add(new EnumSetting.Builder<SortPriority>()
+            .name("priority")
+            .description("Targeting priority")
+            .defaultValue(SortPriority.LowestHealth)
+            .build()
+    );
+
+    private final Setting<Integer> circleSpeed = sgGeneral.add(new IntSetting.Builder()
+            .name("circle-speed")
+            .description("Circle mode speed")
+            .defaultValue(10)
+            .min(1)
+            .sliderMax(180)
+            .build()
+    );
+
+    private final Setting<Boolean> moveThroughBlocks = sgGeneral.add(new BoolSetting.Builder()
+            .name("move-through-blocks")
+            .defaultValue(false)
+            .build()
+    );
+
+    private final Setting<Boolean> budgetGraphics = sgGeneral.add(new BoolSetting.Builder()
+            .name("budget-graphics")
+            .defaultValue(false)
+            .build()
+    );
+
+    private final Setting<SettingColor> circleColor = sgGeneral.add(new ColorSetting.Builder()
+            .name("circle-color")
+            .description("Color for circle rendering")
+            .defaultValue(new SettingColor(0, 255, 0))
+            .visible(budgetGraphics::get)
+            .build()
+    );
+
+
+    int delayWaited = 0;
+    double circleProgress = 0;
+    double addition = 0.0;
+    Entity target = null;
+
+    public Confuse() {
+        super(MeteorRejectsAddon.CATEGORY, "confuse", "Makes your enemies shit themselves");
+    }
+
+    @Override
+    public void onActivate() {
+        delayWaited = 0;
+        circleProgress = 0;
+        addition = 0.0;
+        target = null;
+    }
+
+    @EventHandler
+    private void onTick(TickEvent.Pre event) {
+
+        // Delay
+        delayWaited++;
+        if (delayWaited < delay.get()) return;
+        delayWaited = 0;
+
+
+        // Targetting
+        target = TargetUtils.getPlayerTarget(range.get(), priority.get());
+
+        if (target == null) return;
+
+        Vec3 entityPos = target.position();
+        Vec3 playerPos = mc.player.position();
+        Random r = new Random();
+        BlockHitResult hit;
+        int halfRange = range.get() / 2;
+
+        switch (mode.get()) {
+            case RandomTP:
+                double x = r.nextDouble() * range.get() - halfRange;
+                double y = 0;
+                double z = r.nextDouble() * range.get() - halfRange;
+                Vec3 addend = new Vec3(x, y, z);
+                Vec3 goal = entityPos.add(addend);
+                if (mc.level.getBlockState(BlockPos.containing(goal.x, goal.y, goal.z)).getBlock() != Blocks.AIR) {
+                    goal = new Vec3(x, playerPos.y, z);
+                }
+                if (mc.level.getBlockState(BlockPos.containing(goal.x, goal.y, goal.z)).getBlock() == Blocks.AIR) {
+                    hit = mc.level.clip(new ClipContext(mc.player.position(), goal, ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, mc.player));
+                    if (!moveThroughBlocks.get() && hit.isInside()) {
+                        delayWaited = delay.get() - 1;
+                        break;
+                    }
+                    mc.player.absSnapTo(goal.x, goal.y, goal.z);
+                } else {
+                    delayWaited = delay.get() - 1;
+                }
+                break;
+
+            case Switch:
+                Vec3 diff = entityPos.subtract(playerPos);
+                Vec3 diff1 = new Vec3(Mth.clamp(diff.x, -halfRange, halfRange), Mth.clamp(diff.y, -halfRange, halfRange), Mth.clamp(diff.z, -halfRange, halfRange));
+                Vec3 goal2 = entityPos.add(diff1);
+                hit = mc.level.clip(new ClipContext(mc.player.position(), goal2, ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, mc.player));
+                if (!moveThroughBlocks.get() && hit.isInside()) {
+                    delayWaited = delay.get() - 1;
+                    break;
+                }
+                mc.player.absSnapTo(goal2.x, goal2.y, goal2.z);
+                break;
+
+            case Circle:
+                delay.set(0);
+                circleProgress += circleSpeed.get();
+                if (circleProgress > 360) circleProgress -= 360;
+                double rad = Math.toRadians(circleProgress);
+                double sin = Math.sin(rad) * 3;
+                double cos = Math.cos(rad) * 3;
+                Vec3 current = new Vec3(entityPos.x + sin, playerPos.y, entityPos.z + cos);
+                hit = mc.level.clip(new ClipContext(mc.player.position(), current, ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, mc.player));
+                if (!moveThroughBlocks.get() && hit.isInside())
+                    break;
+                mc.player.absSnapTo(current.x, current.y, current.z);
+                break;
+        }
+    }
+
+    @EventHandler
+    private void onRender(Render3DEvent event) {
+        if (target == null) return;
+
+        boolean flag = budgetGraphics.get();
+        Vec3 last = null;
+        addition += flag ? 0 : 1.0;
+        if (addition > 360) addition = 0;
+        for (int i = 0; i < 360; i += flag ? 7 : 1) {
+            Color c1;
+            if (flag) c1 = circleColor.get();
+            else {
+                double rot = (255.0 * 3) * (((((double) i) + addition) % 360) / 360.0);
+                int seed = (int) Math.floor(rot / 255.0);
+                double current = rot % 255;
+                double red = seed == 0 ? current : (seed == 1 ? Math.abs(current - 255) : 0);
+                double green = seed == 1 ? current : (seed == 2 ? Math.abs(current - 255) : 0);
+                double blue = seed == 2 ? current : (seed == 0 ? Math.abs(current - 255) : 0);
+                c1 = new Color((int) red, (int) green, (int) blue);
+            }
+            Vec3 tp = target.position();
+            double rad = Math.toRadians(i);
+            double sin = Math.sin(rad) * 3;
+            double cos = Math.cos(rad) * 3;
+            Vec3 c = new Vec3(tp.x + sin, tp.y + target.getBbHeight() / 2, tp.z + cos);
+            if (last != null) event.renderer.line(last.x, last.y, last.z, c.x, c.y, c.z, c1);
+            last = c;
+        }
+    }
+}
