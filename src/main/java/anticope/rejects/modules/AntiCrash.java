@@ -43,7 +43,7 @@ public class AntiCrash extends Module {
             ) cancel(event);
         } else if (event.packet instanceof ClientboundLevelParticlesPacket packet) {
             // too many particles
-            if (packet.getCount() > 100_000) cancel(event);
+            if (packet.count() > 100_000) cancel(event);
         } else if (event.packet instanceof ClientboundPlayerPositionPacket packet) {
             Vec3 playerPos = packet.change().position();
             // out of world movement

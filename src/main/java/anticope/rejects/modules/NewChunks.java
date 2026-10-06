@@ -174,12 +174,12 @@ public class NewChunks extends Module {
 		else if (event.packet instanceof ClientboundLevelChunkWithLightPacket && mc.level != null) {
 			ClientboundLevelChunkWithLightPacket packet = (ClientboundLevelChunkWithLightPacket) event.packet;
 
-			ChunkPos pos = new ChunkPos(packet.getX(), packet.getZ());
+			ChunkPos pos = new ChunkPos(packet.x(), packet.z());
 
-			if (!newChunks.contains(pos) && mc.level.getChunkSource().getChunkForLighting(packet.getX(), packet.getZ()) == null) {
+			if (!newChunks.contains(pos) && mc.level.getChunkSource().getChunkForLighting(packet.x(), packet.z()) == null) {
 				LevelChunk chunk = new LevelChunk(mc.level, pos);
 				try {
-					taskExecutor.execute(() -> chunk.replaceWithPacketData(packet.getChunkData().getReadBuffer(), new java.util.HashMap<>(), packet.getChunkData().getBlockEntitiesTagsConsumer(packet.getX(), packet.getZ())));
+					taskExecutor.execute(() -> chunk.replaceWithPacketData(packet.x(), packet.z(), packet.chunkData()));
 				} catch (ArrayIndexOutOfBoundsException e) {
 					return;
 				}

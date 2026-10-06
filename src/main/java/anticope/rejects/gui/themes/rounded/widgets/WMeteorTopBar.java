@@ -16,9 +16,9 @@ import meteordevelopment.meteorclient.gui.widgets.WTopBar;
 import meteordevelopment.meteorclient.gui.widgets.pressable.WPressable;
 import meteordevelopment.meteorclient.utils.render.color.Color;
 import net.minecraft.client.gui.screens.Screen;
+import org.lwjgl.sdl.SDLMouse;
 
 import static meteordevelopment.meteorclient.MeteorClient.mc;
-import static org.lwjgl.glfw.GLFW.glfwSetCursorPos;
 
 public class WMeteorTopBar extends WTopBar implements MeteorWidget {
     @Override
@@ -71,7 +71,7 @@ public class WMeteorTopBar extends WTopBar implements MeteorWidget {
                 double mouseY = mc.mouseHandler.ypos();
 
                 tab.openScreen(theme);
-                glfwSetCursorPos(mc.getWindow().handle(), mouseX, mouseY);
+                SDLMouse.SDL_WarpMouseInWindow(mc.getWindow().handle(), (float) mouseX, (float) mouseY);
             }
         }
 

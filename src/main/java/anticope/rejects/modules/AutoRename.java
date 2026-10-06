@@ -136,7 +136,7 @@ public class AutoRename extends Module {
 
         BundleContents bundle = stack.get(DataComponents.BUNDLE_CONTENTS);
         if (bundle != null) {
-            for (ItemStack item : bundle.itemCopyStream().toList()) {
+            for (ItemStack item : bundle.itemCopies().toList()) {
                 return item.getHoverName().getString();
             }
         }

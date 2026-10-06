@@ -24,7 +24,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.animal.equine.AbstractHorse;
-import net.minecraft.world.entity.monster.EnderMan;
+import net.minecraft.world.entity.monster.Enderman;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.vehicle.minecart.AbstractMinecartContainer;
 import net.minecraft.world.item.ItemStack;
@@ -34,7 +34,6 @@ import org.meteordev.starscript.compiler.Parser;
 import org.meteordev.starscript.utils.Error;
 import org.meteordev.starscript.utils.StarscriptError;
 import org.joml.Vector2f;
-import org.lwjgl.glfw.GLFW;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -172,9 +171,9 @@ public class InteractionScreen extends Screen {
     private ItemStack[] getInventory(Entity e) {
         ItemStack[] stack = new ItemStack[27];
         final int[] index = {0};
-        if (e instanceof EnderMan) {
+        if (e instanceof Enderman) {
             try {
-                stack[index[0]] = ((EnderMan) e).getCarriedBlock().getBlock().asItem().getDefaultInstance();
+                stack[index[0]] = ((Enderman) e).getCarriedBlock().getBlock().asItem().getDefaultInstance();
                 index[0]++;
             } catch (NullPointerException ex) {
             }
@@ -211,17 +210,23 @@ public class InteractionScreen extends Screen {
 
     public void init() {
         super.init();
-        this.cursorMode(GLFW.GLFW_CURSOR_HIDDEN);
+        grabCursor();
         yaw = minecraft.player.getYRot();
         pitch = minecraft.player.getXRot();
     }
 
-    private void cursorMode(int mode) {
+    private void grabCursor() {
         KeyMapping.releaseAll();
         double x = (double) this.minecraft.getWindow().getScreenWidth() / 2;
         double y = (double) this.minecraft.getWindow().getScreenHeight() / 2;
-        // InputUtil.setCursorParameters(this.client.getWindow().getHandle(), mode, x, y);
-        InputConstants.grabOrReleaseMouse(this.minecraft.getWindow(), mode, x, y);
+        InputConstants.grabMouse(this.minecraft.getWindow(), x, y);
+    }
+
+    private void releaseCursor() {
+        KeyMapping.releaseAll();
+        double x = (double) this.minecraft.getWindow().getScreenWidth() / 2;
+        double y = (double) this.minecraft.getWindow().getScreenHeight() / 2;
+        InputConstants.releaseMouse(this.minecraft.getWindow(), x, y);
     }
 
     public void tick() {
@@ -234,7 +239,7 @@ public class InteractionScreen extends Screen {
     }
 
     public void onClose() {
-        cursorMode(GLFW.GLFW_CURSOR_NORMAL);
+        releaseCursor();
         // This makes the magic
         if (focusedString != null) {
             functions.get(focusedString).accept(this.entity);

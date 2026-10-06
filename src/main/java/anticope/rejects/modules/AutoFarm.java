@@ -16,8 +16,8 @@ import meteordevelopment.orbit.EventHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.tags.FluidTags;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.item.HoeItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.LevelReader;
@@ -203,7 +203,7 @@ public class AutoFarm extends Module {
                 block == Blocks.COARSE_DIRT ||
                 block == Blocks.ROOTED_DIRT;
         if (moist && tillable && mc.level.getBlockState(pos.above()).isAir()) {
-            FindItemResult hoe = InvUtils.findInHotbar(itemStack -> itemStack.getItem() instanceof HoeItem);
+            FindItemResult hoe = InvUtils.findInHotbar(itemStack -> itemStack.is(ItemTags.HOES));
             return WorldUtils.interact(pos, hoe, rotate.get());
         }
         return false;

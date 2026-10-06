@@ -19,7 +19,9 @@ public class GameRendererMixin {
     @Shadow @Final
     CrossFrameResourcePool resourcePool;
 
-    @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;doEntityOutline()V", ordinal = 0))
+    // 26.3: LevelRenderer#doEntityOutline was split into executeOutline (private) and
+    // blitEntityOutline (public, called from GameRenderer#render).
+    @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;blitEntityOutline()V", ordinal = 0))
 	private void renderShader(DeltaTracker tickCounter, boolean tick, CallbackInfo ci) {
         Rendering renderingModule = Modules.get().get(Rendering.class);
         if (renderingModule == null) return;
