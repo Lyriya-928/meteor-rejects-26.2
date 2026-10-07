@@ -5,8 +5,9 @@ plugins {
 
 java {
 	toolchain {
-		// Compiled with the Java 26 JDK that ships in this environment.
-		languageVersion = JavaLanguageVersion.of(26)
+		// Minecraft 26.3 targets Java 25 (version manifest "javaVersion": 25), matching
+		// Meteor Client PR #6679 which pins jdk = 25.
+		languageVersion = JavaLanguageVersion.of(25)
 	}
 }
 
